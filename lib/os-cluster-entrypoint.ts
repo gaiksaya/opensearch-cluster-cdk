@@ -9,6 +9,7 @@ import { Stack, StackProps } from 'aws-cdk-lib';
 import { EbsDeviceVolumeType } from 'aws-cdk-lib/aws-autoscaling';
 import {
   AmazonLinuxCpuType,
+  ISecurityGroup,
   IVpc,
   InstanceType,
   SecurityGroup,
@@ -42,6 +43,41 @@ const getInstanceType = (instanceType: string, arch: string) => {
   }
   return getArm64InstanceTypes('r6g.xlarge');
 };
+export interface OsClusterEntrypointProps extends StackProps {
+  readonly suffix ?: string;
+  readonly networkStackSuffix ?: string;
+  readonly distVersion?: string;
+  readonly securityDisabled?: boolean;
+  readonly minDistribution?: boolean;
+  readonly distributionUrl?: string;
+  readonly cpuArch?: string;
+  readonly singleNodeCluster?: boolean;
+  readonly serverAccessType?: string;
+  readonly restrictServerAccessTo ?: string;
+  readonly dashboardsUrl?: string;
+  readonly vpcID?: IVpc;
+  readonly securityGroup?: ISecurityGroup;
+  readonly cidr ?: string;
+  readonly managerNodeCount?: number;
+  readonly dataNodeCount?: number;
+  readonly ingestNodeCount?: number;
+  readonly clientNodeCount?: number;
+  readonly mlNodeCount?: number;
+  readonly dataNodeStorage?: number;
+  readonly mlNodeStorage?: number;
+  readonly dataInstanceType?: InstanceType;
+  readonly mlInstanceType?: InstanceType;
+  readonly use50PercentHeap?: boolean;
+  readonly isInternal?: boolean;
+  readonly enableRemoteStore?: boolean;
+  readonly storageVolumeType?: EbsDeviceVolumeType;
+  readonly customRoleArn?: string;
+  readonly jvmSysProps?: string;
+  readonly additionalConfig?: string;
+  readonly additionalOsdConfig?: string;
+  readonly customConfigFiles?: string;
+  readonly enableMonitoring?: boolean;
+}
 
 export class OsClusterEntrypoint {
     public stacks: Stack[] = [];
@@ -50,7 +86,7 @@ export class OsClusterEntrypoint {
 
     public securityGroup = SecurityGroup;
 
-    constructor(scope: Construct, props: StackProps) {
+    constructor(scope: Construct, props: OsClusterEntrypointProps) {
       let instanceCpuType: AmazonLinuxCpuType;
       let managerCount: number;
       let dataCount: number;
@@ -69,40 +105,40 @@ export class OsClusterEntrypoint {
 
       const x64InstanceTypes: string[] = Object.keys(x64Ec2InstanceType);
       const arm64InstanceTypes: string[] = Object.keys(arm64Ec2InstanceType);
-      const vpcId: string = scope.node.tryGetContext('vpcId');
-      const securityGroupId = scope.node.tryGetContext('securityGroupId');
-      const cidrRange = scope.node.tryGetContext('cidr');
-      const restrictServerAccessTo = scope.node.tryGetContext('restrictServerAccessTo');
-      const serverAccessType = scope.node.tryGetContext('serverAccessType');
+      const vpcId: string = props?.vpcID ?? scope.node.tryGetContext('vpcId');
+      const securityGroupId = props?.securityGroup ?? scope.node.tryGetContext('securityGroupId');
+      const cidrRange = props?.cidr ?? scope.node.tryGetContext('cidr');
+      const restrictServerAccessTo = props?.restrictServerAccessTo ?? scope.node.tryGetContext('restrictServerAccessTo');
+      const serverAccessType = props?.serverAccessType ?? scope.node.tryGetContext('serverAccessType');
 
-      const distVersion = `${scope.node.tryGetContext('distVersion')}`;
+      const distVersion = `${props?.distVersion ?? scope.node.tryGetContext('distVersion')}`;
       if (distVersion.toString() === 'undefined') {
         throw new Error('Please provide the OS distribution version');
       }
 
-      const securityDisabled = `${scope.node.tryGetContext('securityDisabled')}`;
+      const securityDisabled = `${props?.securityDisabled ?? scope.node.tryGetContext('securityDisabled')}`;
       if (securityDisabled !== 'true' && securityDisabled !== 'false') {
         throw new Error('securityEnabled parameter is required to be set as - true or false');
       }
       const security = securityDisabled === 'true';
 
-      const minDistribution = `${scope.node.tryGetContext('minDistribution')}`;
+      const minDistribution = `${props?.minDistribution ?? scope.node.tryGetContext('minDistribution')}`;
       if (minDistribution !== 'true' && minDistribution !== 'false') {
         throw new Error('minDistribution parameter is required to be set as - true or false');
       }
       const minDist = minDistribution === 'true';
 
-      const distributionUrl = `${scope.node.tryGetContext('distributionUrl')}`;
+      const distributionUrl = `${props?.distributionUrl ?? scope.node.tryGetContext('distributionUrl')}`;
       if (distributionUrl.toString() === 'undefined') {
         throw new Error('distributionUrl parameter is required. Please provide the artifact url to download');
       }
 
-      const dashboardUrl = `${scope.node.tryGetContext('dashboardsUrl')}`;
+      const dashboardUrl = `${props?.dashboardsUrl ?? scope.node.tryGetContext('dashboardsUrl')}`;
 
-      const cpuArch = `${scope.node.tryGetContext('cpuArch')}`;
+      const cpuArch = `${props?.cpuArch ?? scope.node.tryGetContext('cpuArch')}`;
 
-      const dataInstanceType = `${scope.node.tryGetContext('dataInstanceType')}`;
-      const mlInstanceType = `${scope.node.tryGetContext('mlInstanceType')}`;
+      const dataInstanceType = `${props?.dataInstanceType ?? scope.node.tryGetContext('dataInstanceType')}`;
+      const mlInstanceType = `${props?.mlInstanceType ?? scope.node.tryGetContext('mlInstanceType')}`;
 
       if (cpuArch.toString() === 'undefined') {
         throw new Error('cpuArch parameter is required. The provided value should be either x64 or arm64, any other value is invalid');
@@ -121,52 +157,52 @@ export class OsClusterEntrypoint {
         throw new Error('Please provide a valid cpu architecture. The valid value can be either x64 or arm64');
       }
 
-      const singleNodeCluster = `${scope.node.tryGetContext('singleNodeCluster')}`;
+      const singleNodeCluster = `${props?.singleNodeCluster ?? scope.node.tryGetContext('singleNodeCluster')}`;
       const isSingleNode = singleNodeCluster === 'true';
 
-      const managerNodeCount = `${scope.node.tryGetContext('managerNodeCount')}`;
+      const managerNodeCount = `${props?.managerNodeCount ?? scope.node.tryGetContext('managerNodeCount')}`;
       if (managerNodeCount.toString() === 'undefined') {
         managerCount = 3;
       } else {
         managerCount = parseInt(managerNodeCount, 10);
       }
 
-      const dataNodeCount = `${scope.node.tryGetContext('dataNodeCount')}`;
+      const dataNodeCount = `${props?.dataNodeCount ?? scope.node.tryGetContext('dataNodeCount')}`;
       if (dataNodeCount.toString() === 'undefined') {
         dataCount = 2;
       } else {
         dataCount = parseInt(dataNodeCount, 10);
       }
 
-      const clientNodeCount = `${scope.node.tryGetContext('clientNodeCount')}`;
+      const clientNodeCount = `${props?.clientNodeCount ?? scope.node.tryGetContext('clientNodeCount')}`;
       if (clientNodeCount.toString() === 'undefined') {
         clientCount = 0;
       } else {
         clientCount = parseInt(clientNodeCount, 10);
       }
 
-      const ingestNodeCount = `${scope.node.tryGetContext('ingestNodeCount')}`;
+      const ingestNodeCount = `${props?.ingestNodeCount ?? scope.node.tryGetContext('ingestNodeCount')}`;
       if (ingestNodeCount.toString() === 'undefined') {
         ingestCount = 0;
       } else {
         ingestCount = parseInt(clientNodeCount, 10);
       }
 
-      const mlNodeCount = `${scope.node.tryGetContext('mlNodeCount')}`;
+      const mlNodeCount = `${props?.mlNodeCount ?? scope.node.tryGetContext('mlNodeCount')}`;
       if (mlNodeCount.toString() === 'undefined') {
         mlCount = 0;
       } else {
         mlCount = parseInt(mlNodeCount, 10);
       }
 
-      const dataSize = `${scope.node.tryGetContext('dataNodeStorage')}`;
+      const dataSize = `${props?.dataNodeStorage ?? scope.node.tryGetContext('dataNodeStorage')}`;
       if (dataSize === 'undefined') {
         dataNodeStorage = 100;
       } else {
         dataNodeStorage = parseInt(dataSize, 10);
       }
 
-      const inputVolumeType = `${scope.node.tryGetContext('storageVolumeType')}`;
+      const inputVolumeType = `${props?.storageVolumeType ?? scope.node.tryGetContext('storageVolumeType')}`;
       if (inputVolumeType.toString() === 'undefined') {
         // use gp2 volume by default
         volumeType = getVolumeType('gp2');
@@ -174,16 +210,16 @@ export class OsClusterEntrypoint {
         volumeType = getVolumeType(inputVolumeType);
       }
 
-      const mlSize = `${scope.node.tryGetContext('mlNodeStorage')}`;
+      const mlSize = `${props?.mlNodeStorage ?? scope.node.tryGetContext('mlNodeStorage')}`;
       if (mlSize === 'undefined') {
         mlNodeStorage = 100;
       } else {
         mlNodeStorage = parseInt(mlSize, 10);
       }
 
-      const jvmSysProps = `${scope.node.tryGetContext('jvmSysProps')}`;
+      const jvmSysProps = `${props?.jvmSysProps ?? scope.node.tryGetContext('jvmSysProps')}`;
 
-      const osConfig = `${scope.node.tryGetContext('additionalConfig')}`;
+      const osConfig = `${props?.additionalConfig ?? scope.node.tryGetContext('additionalConfig')}`;
       if (osConfig.toString() !== 'undefined') {
         try {
           const jsonObj = JSON.parse(osConfig);
@@ -193,7 +229,7 @@ export class OsClusterEntrypoint {
         }
       }
 
-      const osdConfig = `${scope.node.tryGetContext('additionalOsdConfig')}`;
+      const osdConfig = `${props?.additionalOsdConfig ?? scope.node.tryGetContext('additionalOsdConfig')}`;
       if (osdConfig.toString() !== 'undefined') {
         try {
           const jsonObj = JSON.parse(osdConfig);
@@ -203,24 +239,24 @@ export class OsClusterEntrypoint {
         }
       }
 
-      customConfigFiles = `${scope.node.tryGetContext('customConfigFiles')}`;
+      customConfigFiles = `${props?.customConfigFiles ?? scope.node.tryGetContext('customConfigFiles')}`;
 
-      const suffix = `${scope.node.tryGetContext('suffix')}`;
-      const networkStackSuffix = `${scope.node.tryGetContext('networkStackSuffix')}`;
+      const suffix = `${props?.suffix ?? scope.node.tryGetContext('suffix')}`;
+      const networkStackSuffix = `${props?.networkStackSuffix ?? scope.node.tryGetContext('networkStackSuffix')}`;
 
-      const use50heap = `${scope.node.tryGetContext('use50PercentHeap')}`;
+      const use50heap = `${props?.use50PercentHeap ?? scope.node.tryGetContext('use50PercentHeap')}`;
       const use50PercentHeap = use50heap === 'true';
 
-      const nlbScheme = `${scope.node.tryGetContext('isInternal')}`;
+      const nlbScheme = `${props?.isInternal ?? scope.node.tryGetContext('isInternal')}`;
       const isInternal = nlbScheme === 'true';
 
-      const remoteStore = `${scope.node.tryGetContext('enableRemoteStore')}`;
+      const remoteStore = `${props?.enableRemoteStore ?? scope.node.tryGetContext('enableRemoteStore')}`;
       const enableRemoteStore = remoteStore === 'true';
 
-      const monitoringAndAlarms = `${scope.node.tryGetContext('enableMonitoring')}`;
+      const monitoringAndAlarms = `${props?.enableMonitoring ?? scope.node.tryGetContext('enableMonitoring')}`;
       const enableMonitoring = monitoringAndAlarms === 'true';
 
-      const customRoleArn = `${scope.node.tryGetContext('customRoleArn')}`;
+      const customRoleArn = `${props?.customRoleArn ?? scope.node.tryGetContext('customRoleArn')}`;
 
       let networkStackName = 'opensearch-network-stack';
       if (networkStackSuffix !== 'undefined') {

@@ -37,13 +37,6 @@ jobs:
           filename=`ls | grep opensearch-project-opensearch-cluster-cdk`
           mkdir publish-cluster-cdk && mv $filename publish-cluster-cdk/
           tar -cvf artifacts.tar.gz publish-cluster-cdk
-      - name: untar and check
-        run: |
-          pwd
-          ls -l
-          tar -zxf artifacts.tar.gz
-          cd publish-cluster-cdk
-          ls -l
       - name: Draft a release
         uses: softprops/action-gh-release@v1
         with:

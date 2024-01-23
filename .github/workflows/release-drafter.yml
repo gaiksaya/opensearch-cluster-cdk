@@ -30,7 +30,7 @@ jobs:
         run: |
           npm pack
           filename=`ls | grep opensearch-project-opensearch-cluster-cdk`
-          mkdir opensearch-cluster-cdk && mv $filename opensearch-cluster-cdk/opensearch-cluster-cdk.tar.gz
+          mkdir opensearch-cluster-cdk && mv $filename opensearch-cluster-cdk/
           tar -cvf artifacts.tar.gz opensearch-cluster-cdk
       - name: Draft a release
         uses: softprops/action-gh-release@v1

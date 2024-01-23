@@ -36,7 +36,7 @@ jobs:
           npm pack
           filename=`ls | grep opensearch-project-opensearch-cluster-cdk`
           mkdir publish-cluster-cdk && mv $filename publish-cluster-cdk/
-          tar -cvf artifacts.tar.gz opensearch-cluster-cdk
+          tar -cvf artifacts.tar.gz publish-cluster-cdk
       - name: untar and check
         run: |
           tar -zxf artifacts.tar.gz

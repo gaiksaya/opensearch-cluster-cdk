@@ -26,6 +26,11 @@ jobs:
       #     issue-title: 'Release opensearch-cluster-cdk : ${{ steps.get_data.outputs.version }}'
       #     issue-body: "Please approve or deny the release of opensearch-cluster-cdk. **VERSION**: ${{ steps.get_data.outputs.version }} **TAG**: ${{ github.ref_name }}  **COMMIT**: ${{ github.sha }}"
       #     exclude-workflow-initiator-as-approver: true
+      - name: Set up node
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: 10.17.27
+          registry-url: 'https://registry.npmjs.org'
       - name: Build and package
         run: |
           npm pack

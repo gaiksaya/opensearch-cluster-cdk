@@ -9,6 +9,6 @@ standardReleasePipelineWithGenericTrigger(
     publishRelease: true) {
         publishToNpm(
             publicationType: 'artifact',
-            artifactPath: "${WORKSPACE}/opensearch-cluster-cdk/opensearch-cluster-cdk.tar.gz"
+            artifactPath: "${WORKSPACE}/publish-cluster-cdk/opensearch-cluster-cdk.tar.gz"
             )
     }

@@ -35,8 +35,8 @@ jobs:
         run: |
           npm install && npm run build
           npm pack
-          filename=`ls | grep my-opensearch-cluster-cdk-test`
-          mkdir publish-cluster-cdk && mv $filename publish-cluster-cdk/
+          filename=`ls | grep opensearch-project-opensearch-cluster-cdk`
+          mkdir publish-cluster-cdk && mv $filename publish-cluster-cdk/opensearch-cluster-cdk.tar.gz
           tar -cvf artifacts.tar.gz publish-cluster-cdk
       - name: Draft a release
         uses: softprops/action-gh-release@v1

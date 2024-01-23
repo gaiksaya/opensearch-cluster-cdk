@@ -33,7 +33,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Build and package
         run: |
-          npm install
+          npm install && npm run build
           npm pack
           filename=`ls | grep my-opensearch-cluster-cdk-test`
           mkdir publish-cluster-cdk && mv $filename publish-cluster-cdk/

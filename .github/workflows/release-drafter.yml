@@ -33,20 +33,19 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Build and package
         run: |
-          pwd
-          ls -l
           npm pack
           filename=`ls | grep opensearch-project-opensearch-cluster-cdk`
-          mkdir opensearch-cluster-cdk && mv $filename opensearch-cluster-cdk/
+          mkdir publish-cluster-cdk && mv $filename publish-cluster-cdk/
           tar -cvf artifacts.tar.gz opensearch-cluster-cdk
-      # - name: Draft a release
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     draft: true
-      #     generate_release_notes: true
-      #     files: |
-      #       artifacts.tar.gz
-      - name: upload artifact
-        uses: actions/upload-artifact@v4
+      - name: untar and check
+        run: |
+          tar -zxf artifacts.tar.gz
+          cd publish-cluster-cdk
+          ls -l
+      - name: Draft a release
+        uses: softprops/action-gh-release@v1
         with:
-          path: artifacts.tar.gz
+          draft: true
+          generate_release_notes: true
+          files: |
+            artifacts.tar.gz

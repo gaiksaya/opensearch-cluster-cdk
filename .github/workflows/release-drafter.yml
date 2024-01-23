@@ -2,8 +2,8 @@ name: Draft a release
 
 on:
   push:
-    # tags:
-    #   - "*"
+    tags:
+      - "*"
 
 jobs:
   draft-a-release:
@@ -34,7 +34,7 @@ jobs:
       - name: Build and package
         run: |
           npm pack
-          filename=`ls | grep opensearch-project-opensearch-cluster-cdk`
+          filename=`ls | grep my-opensearch-cluster-cdk-test`
           mkdir publish-cluster-cdk && mv $filename publish-cluster-cdk/
           tar -cvf artifacts.tar.gz publish-cluster-cdk
       - name: Draft a release

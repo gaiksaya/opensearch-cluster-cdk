@@ -209,6 +209,38 @@ test('Test Resources with security enabled multi-node with existing Vpc with use
     SecurityGroupIngress: [
       {
         CidrIp: '10.10.10.10/32',
+        Description: 'from 10.10.10.10/32:80',
+        FromPort: 80,
+        IpProtocol: 'tcp',
+        ToPort: 80,
+      },
+      {
+        CidrIp: '10.10.10.10/32',
+        Description: 'from 10.10.10.10/32:443',
+        FromPort: 443,
+        IpProtocol: 'tcp',
+        ToPort: 443,
+      },
+      {
+        CidrIp: '10.10.10.10/32',
+        Description: 'from 10.10.10.10/32:9200',
+        FromPort: 9200,
+        IpProtocol: 'tcp',
+        ToPort: 9200,
+      },
+      {
+        CidrIp: '10.10.10.10/32',
+        Description: 'from 10.10.10.10/32:5601',
+        FromPort: 5601,
+        IpProtocol: 'tcp',
+        ToPort: 5601,
+      },
+      {
+        CidrIp: '10.10.10.10/32',
+        Description: 'from 10.10.10.10/32:8443',
+        FromPort: 8443,
+        IpProtocol: 'tcp',
+        ToPort: 8443,
       },
     ],
   });
@@ -825,5 +857,41 @@ test('Test additionalConfig overriding values', () => {
         },
       },
     },
+  });
+});
+
+test('Test Resources with securityGroupId param', () => {
+  const app = new App({
+    context: {
+      securityDisabled: false,
+      minDistribution: false,
+      distributionUrl: 'www.example.com',
+      cpuArch: 'x64',
+      singleNodeCluster: false,
+      dashboardsUrl: 'www.example.com',
+      distVersion: '1.0.0',
+      serverAccessType: 'securityGroupId',
+      restrictServerAccessTo: 'sg-012a34s123d234f90',
+    },
+  });
+
+  // WHEN
+  const networkStack = new NetworkStack(app, 'opensearch-network-stack', {
+    env: { account: 'test-account', region: 'us-east-1' },
+  });
+
+  // @ts-ignore
+  const infraStack = new InfraStack(app, 'opensearch-infra-stack', {
+    vpc: networkStack.vpc,
+    securityGroup: networkStack.osSecurityGroup,
+    env: { account: 'test-account', region: 'us-east-1' },
+  });
+  const networkTemplate = Template.fromStack(networkStack);
+  networkTemplate.resourceCountIs('AWS::EC2::SecurityGroup', 0);
+  const infraTemplate = Template.fromStack(infraStack);
+  infraTemplate.hasResourceProperties('AWS::AutoScaling::LaunchConfiguration', {
+    SecurityGroups: [
+      'sg-012a34s123d234f90',
+    ],
   });
 });

@@ -10,7 +10,9 @@ import {
   IPeer,
   ISecurityGroup,
   IVpc,
-  Peer, Port, SecurityGroup, SubnetType, Vpc,
+  Peer,
+  Port,
+  SecurityGroup, SubnetType, Vpc,
 } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
@@ -44,7 +46,6 @@ export class NetworkStack extends Stack {
     const vpcId = `${props?.vpcId ?? scope.node.tryGetContext('vpcId')}`;
     const serverAccessType = `${props?.serverAccessType ?? scope.node.tryGetContext('serverAccessType')}`;
     const restrictServerAccessTo = `${props?.restrictServerAccessTo ?? scope.node.tryGetContext('restrictServerAccessTo')}`;
-    const secGroupId = `${props?.securityGroupId ?? scope.node.tryGetContext('securityGroupId')}`;
 
     if (typeof restrictServerAccessTo === 'undefined' || typeof serverAccessType === 'undefined') {
       throw new Error('serverAccessType and restrictServerAccessTo parameters are required - eg: serverAccessType=ipv4 restrictServerAccessTo=10.10.10.10/32');
@@ -79,19 +80,20 @@ export class NetworkStack extends Stack {
     }
 
     // Security Group specs
-    if (secGroupId === 'undefined') {
+    if (serverAccessType !== 'securityGroupId') {
       this.osSecurityGroup = new SecurityGroup(this, 'osSecurityGroup', {
         vpc: this.vpc,
         allowAllOutbound: true,
       });
+      this.osSecurityGroup.addIngressRule(serverAccess, Port.tcp(80));
+      this.osSecurityGroup.addIngressRule(serverAccess, Port.tcp(443));
+      this.osSecurityGroup.addIngressRule(serverAccess, Port.tcp(9200));
+      this.osSecurityGroup.addIngressRule(serverAccess, Port.tcp(5601));
+      this.osSecurityGroup.addIngressRule(serverAccess, Port.tcp(8443));
+      this.osSecurityGroup.addIngressRule(this.osSecurityGroup, Port.allTraffic());
     } else {
-      this.osSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'osSecurityGroup', secGroupId);
+      this.osSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'osSecurityGroup', restrictServerAccessTo);
     }
-
-    /* The security group allows all ip access by default to all the ports.
-    Please update below if you want to restrict access to certain ips and ports */
-    this.osSecurityGroup.addIngressRule(serverAccess, Port.allTcp());
-    this.osSecurityGroup.addIngressRule(this.osSecurityGroup, Port.allTraffic());
   }
 
   private static getServerAccess(restrictServerAccessTo: string, serverAccessType: string): IPeer {

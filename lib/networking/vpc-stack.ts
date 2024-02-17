@@ -47,7 +47,11 @@ export class NetworkStack extends Stack {
     const serverAccessType = `${props?.serverAccessType ?? scope.node.tryGetContext('serverAccessType')}`;
     const restrictServerAccessTo = `${props?.restrictServerAccessTo ?? scope.node.tryGetContext('restrictServerAccessTo')}`;
 
-    if (typeof restrictServerAccessTo === 'undefined' || typeof serverAccessType === 'undefined') {
+    if (serverAccessType === 'securityGroupId' && vpcId === 'undefined') {
+      throw new Error('securityGroupID needs to belong to the same VPC as other resources. Please specify existing vpcId');
+    }
+
+    if (restrictServerAccessTo === 'undefined' || serverAccessType === 'undefined') {
       throw new Error('serverAccessType and restrictServerAccessTo parameters are required - eg: serverAccessType=ipv4 restrictServerAccessTo=10.10.10.10/32');
     } else {
       serverAccess = NetworkStack.getServerAccess(restrictServerAccessTo, serverAccessType);

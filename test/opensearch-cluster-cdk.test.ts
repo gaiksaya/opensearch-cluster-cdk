@@ -872,6 +872,7 @@ test('Test Resources with securityGroupId param', () => {
       distVersion: '1.0.0',
       serverAccessType: 'securityGroupId',
       restrictServerAccessTo: 'sg-012a34s123d234f90',
+      vpcId: 'vpc-12345',
     },
   });
 
@@ -894,4 +895,40 @@ test('Test Resources with securityGroupId param', () => {
       'sg-012a34s123d234f90',
     ],
   });
+});
+
+test('Test Resources with securityGroupId and vpcID param missing', () => {
+  const app = new App({
+    context: {
+      securityDisabled: false,
+      minDistribution: false,
+      distributionUrl: 'www.example.com',
+      cpuArch: 'x64',
+      singleNodeCluster: false,
+      dashboardsUrl: 'www.example.com',
+      distVersion: '1.0.0',
+      serverAccessType: 'securityGroupId',
+      restrictServerAccessTo: 'sg-012a34s123d234f90',
+    },
+  });
+
+  try {
+    const networkStack = new NetworkStack(app, 'opensearch-network-stack', {
+      env: { account: 'test-account', region: 'us-east-1' },
+    });
+
+    // @ts-ignore
+    const infraStack = new InfraStack(app, 'opensearch-infra-stack', {
+      vpc: networkStack.vpc,
+      securityGroup: networkStack.osSecurityGroup,
+      env: { account: 'test-account', region: 'us-east-1' },
+    });
+
+    // eslint-disable-next-line no-undef
+    fail('Expected an error to be thrown');
+  } catch (error) {
+    expect(error).toBeInstanceOf(Error);
+    // @ts-ignore
+    expect(error.message).toEqual('securityGroupID needs to belong to the same VPC as other resources. Please specify existing vpcId');
+  }
 });

@@ -1,6 +1,10 @@
 {
   "name": "my-opensearch-cluster-cdk-test",
   "version": "1.4.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gaiksaya/opensearch-cluster-cdk"
+  },
   "bin": {
     "cdk_v2": "bin/app.js"
   },
